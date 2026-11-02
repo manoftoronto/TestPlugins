@@ -27,15 +27,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push builds
-        uses: cpina/github-action-push-to-another-branch@main
+      - name: Commit built plugins to builds branch
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.name "action@github.com"
+          git checkout --orphan builds
+          git rm -rf .
+          cp -r builds/* .
+          git add .
+          git commit -m "Build plugins" || true
+          git push origin builds --force
         env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          source-dir: 'builds/'
-          destination-github-repo: '${{ github.repository }}'
-          destination-branch: 'builds'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          user_email: "action@github.com"
-          user_name: "GitHub Action"
-          commit_message: "Build plugins"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
