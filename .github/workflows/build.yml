@@ -19,25 +19,26 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-
       - name: Build Plugins
-        run: ./gradlew make
+        run: |
+          chmod +x gradlew
+          ./gradlew make makePluginsJson
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push builds
-        uses: cpina/github-action-push-to-another-branch@main
+      - name: Commit built plugins to builds branch
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          mkdir -p out_builds
+          find . -name "*.cs3" -exec cp {} out_builds/ \;
+          find . -name "plugins.json" -exec cp {} out_builds/ \;
+          git checkout --orphan builds
+          git rm -rf .
+          cp -r out_builds/* . || true
+          rm -rf out_builds
+          git add .
+          git commit -m "Build plugins" || true
+          git push origin builds --force
         env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          source-dir: 'builds/'
-          destination-github-repo: '${{ github.repository }}'
-          destination-branch: 'builds'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          user_email: "action@github.com"
-          user_name: "GitHub Action"
-          commit_message: "Build plugins"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
